@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>InstancedGeometry basic example</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style> body {
+        color: #ffffff;
+        font-family: Monospace;
+        font-size: 13px;
+        text-align: center;
+        font-weight: bold;
+        background-color: #000000;
+        margin: 0px;
+        overflow: hidden;
+    }
+    </style>
+</head>
+<body>
+
+<script id="vertexShader" type="x-shader/x-vertex">
+        precision highp float;
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat3 normalMatrix;
+
+        //'blueprint'
+        attribute vec3 position;
+
+        //instances
+        attribute vec3 translation;
+        attribute vec4 rotation;
+        attribute vec3 scale;
+
+        // transforms the 'blueprint' geometry with instance attributes
+        vec3 transform( inout vec3 position, vec3 T, vec4 R, vec3 S ) {
+            //applies the scale
+            position *= S;
+            //computes the rotation where R is a (vec4) quaternion
+            position += 2.0 * cross( R.xyz, cross( R.xyz, position ) + R.w * position );
+            //translates the transformed 'blueprint'
+            position += T;
+            //return the transformed position
+            return position;
+        }
+        //re-use position for shading
+        varying vec3 vPos;
+        void main() {
+
+            //collects the 'blueprint' coordinates
+            vec3 pos = position;
+            //transform it
+            transform( pos, translation, rotation, scale );
+            //project to get the fragment position
+            gl_Position = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );
+            //just to render something :)
+            vPos = pos;
+
+        }
+    </script>
+
+<script id="fragmentShader" type="x-shader/x-fragment">
+        precision highp float;
+        varying vec3 vPos;
+        void main() {
+            gl_FragColor = vec4( normalize( vPos ), 1. );
+        }
+    </script>
+
+
+<script src="vendor/three.min.js"></script>
+<script src="vendor/OrbitControls.js"></script>
+<script>
+
+    var scene, camera, renderer, controls;
+
+    function init3D(){
+
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
+        renderer = new THREE.WebGLRenderer({antialias:true});
+        renderer.setClearColor( new THREE.Color( 0x101010 ));
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        document.body.appendChild( renderer.domElement );
+        controls = new THREE.OrbitControls( camera, renderer.domElement );
+        window.addEventListener( 'resize', onResize );
+        onResize();
+
+    }
+
+    function onResize() {
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize( w, h );
+    }
+
+    window.onload = function(){
+
+        init3D();
+
+        var mesh = getInstances( 100000 );
+        scene.add( mesh );
+
+        camera.position.copy( {x: -100.32919722157854, y: 94.22507699183404, z: 146.0295339101336} );
+        controls.target.copy( {x: 49.25195956775783, y: 72.26443254478691, z: 42.352961091873546} );
+        controls.update();
+        update();
+
+    };
+
+    function getInstances( count ){
+
+        //creates an instancedBufferGeometry
+        var geometry = new THREE.InstancedBufferGeometry();
+
+        //a vertex buffer for the 'blueprint' representing a single triangle
+        var blueprint = [];
+        for ( var i = 0; i < 3; i++){
+            var a = Math.PI / 180 * 120 * i;
+            blueprint.push( Math.cos( a ), Math.sin( a ), 0 );
+        }
+
+        //assign the positions as a 'regular' BufferAttribute
+        var attribute = new THREE.BufferAttribute( new Float32Array( blueprint ), 3);
+        geometry.addAttribute( 'position', attribute );
+
+        //and that's it for the 'blueprint' ; all instances will share these data
+        //we can add more ; normals and uvs are very often used to shade the mesh.
+        //now for the InstancedBufferAttributes, what makes each instance different.
+
+        //we create InstancedBufferAttribute, properties of each instance
+        var translation = new Float32Array( count * 3 );
+        var rotation = new Float32Array( count * 4 );
+        var scale = new Float32Array( count * 3 );
+
+        //and iterators for convenience :)
+        var translationIterator = 0;
+        var rotationIterator = 0;
+        var scaleIterator = 0;
+
+        //and a quaternion (rotations are represented by Quaternions, not Eulers)
+        var q = new THREE.Quaternion();
+
+        //now let's feed some random values to transform the instances
+        for ( i = 0; i < count; i++ ){
+
+            //a random position
+            translation[ translationIterator++ ] = ( Math.random() - .5 ) * 1000;
+            translation[ translationIterator++ ] = ( Math.random() - .5 ) * 1000;
+            translation[ translationIterator++ ] = ( Math.random() - .5 ) * 1000;
+
+            //a random rotation
+
+            //randomize quaternion not sure if it's how you do it but it looks random
+            q.set(  ( Math.random() - .5 ) * 2,
+                ( Math.random() - .5 ) * 2,
+                ( Math.random() - .5 ) * 2,
+                Math.random() * Math.PI );
+            q.normalize();
+
+            //assign to bufferAttribute
+            rotation[ rotationIterator++ ] = q.x;
+            rotation[ rotationIterator++ ] = q.y;
+            rotation[ rotationIterator++ ] = q.z;
+            rotation[ rotationIterator++ ] = q.w;
+
+            //a random scale
+            scale[ scaleIterator++ ] = 0.1 + ( Math.random() * 4 );
+            scale[ scaleIterator++ ] = 0.1 + ( Math.random() * 4 );
+            scale[ scaleIterator++ ] = 0.1 + ( Math.random() * 4 );
+
+        }
+
+        //assign the InstancedBufferAttributes to the geometry
+        geometry.addAttribute( 'translation', new THREE.InstancedBufferAttribute( translation, 3, 1 ) );
+        geometry.addAttribute( 'rotation', new THREE.InstancedBufferAttribute( rotation, 4, 1 ) );
+        geometry.addAttribute( 'scale', new THREE.InstancedBufferAttribute( scale, 3, 1 ) );
+
+        // create a material
+        var material = new THREE.RawShaderMaterial( {
+            vertexShader: document.getElementById( 'vertexShader' ).textContent,
+            fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+            side:THREE.DoubleSide
+        } );
+        return new THREE.Mesh( geometry, material );
+    }
+
+    function update() {
+        requestAnimationFrame(update);
+        controls.update();
+        renderer.render( scene, camera );
+    }
+
+</script>
+
+</body>
+</html>
