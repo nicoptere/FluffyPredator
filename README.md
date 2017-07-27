@@ -15,7 +15,7 @@ Anyhow, a _vertex shader_ is involved to transform the _blueprint_. This may see
 
 There is a limitation when using Instances ; in WebGL, you can't pass more than 4 floats per attribute. This may not sound like much but it has a big impact on how you manipulate the meshes. You can't pass a Matrix4 (4*4 floats) to transform an _instance_. This was a surprise for me, a Matrix4 is the way meshes' store their transformations internally, it would be convenient to pass the elements of a matrix and use this matrix InstancedAttribute it to transform each _instance_ of the _blueprint_ but it is not technically feasible.
 
-##When life gives you lemons...
+## When life gives you lemons...
 
 Therefore, the easiest way to transform an _instance_ is to use 3 InstancedBufferAttributes to represent the TRS :
 
@@ -176,7 +176,7 @@ The ratio can be passed as an InstancedBufferAttribute so that each _instance_ o
 
 It is also trivial to use a distribution object - the translation InstanceBufferAttributes are the vertices of the distribution mesh, the rotation can be computed with a lookAt().
 
-##When life gives you affine transforms, run.
+## When life gives you affine transforms, run.
 
 The next natural step for me was to try to cover a mesh with _instances_ of triangles so that any mesh with a triangular basis would fit nicely and wrap the distribution mesh.
 
