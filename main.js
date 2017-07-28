@@ -23,13 +23,13 @@ function onResize() {
     renderer.setSize( w, h );
 }
 
-function load(){
+function load( res ){
 
     if( assetsLoader.mesh === undefined ){
 
         assetsLoader.load([
 
-            { name:"mesh",          url:"models/predator.js", type:assetsLoader.MOD },
+            { name:"mesh",          url:"models/predator"+res+".js", type:assetsLoader.MOD },
 
             { name:"env_vert",      url:"glsl/envmap_vs.glsl", type:assetsLoader.TXT },
             { name:"env_frag",      url:"glsl/envmap_fs.glsl", type:assetsLoader.TXT },
@@ -42,8 +42,9 @@ function load(){
 
         ], onLoad );
 
-        var btn = document.getElementById('btn');
+        var btn = document.getElementById('select');
         document.body.removeChild(btn);
+
     }
 
 }

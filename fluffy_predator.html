@@ -17,15 +17,20 @@
             margin:0;
             padding:0;
         }
-        button{
-            width: 32%;
-            height: 3em;
+        .container {
+            width: 10%;
+            height: 6em;
             line-height:3em;
         }
         .center {
             margin: auto;
             position: absolute;
             top: 0; left: 0; bottom: 0; right: 0;
+        }
+        .button{
+            width: 200px;
+            height: 3em;
+            line-height:3em;
         }
     </style>
 </head>
@@ -38,7 +43,10 @@
     <script src="alignTriangles.js"></script>
     <script src="main.js"></script>
 
-    <button id="btn" class="center" onclick="load()">fluffy! let's go!</button>
+    <div id="select" class="container center">
+        <button id="btn0" class="button" onclick="load('_65k')">easy Fluffy! (LO-RES)</button><br>
+        <button id="btn1" class="button" onclick="load('')">Fluffy let's go! (HI-RES)</button>
+    </div>
 
 </body>
 </html>
